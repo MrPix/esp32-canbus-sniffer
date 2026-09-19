@@ -150,11 +150,12 @@ void can_transmitter_stop(can_transmitter_t *transmitter)
 	transmitter->bitrate_kbps = 0;
 }
 
-esp_err_t can_transmitter_send(can_transmitter_t *transmitter, uint32_t id, const uint8_t *data, uint8_t data_len)
+esp_err_t can_transmitter_send(can_transmitter_t *transmitter, uint32_t id, bool extended, const uint8_t *data, uint8_t data_len)
 {
 	twai_frame_t frame = {
 		.header = {
 			.id = id,
+			.ide = extended,
 			.dlc = data_len,
 		},
 		.buffer = (uint8_t *)data,

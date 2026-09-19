@@ -1,4 +1,4 @@
-# Warnaxon
+# esp32-canbus-sniffer
 
 ESP32 classic CAN bus discovery, sniffing, and transmission over an SN65HVD230
 transceiver. Discovery and sniffing use listen-only mode; transmission uses

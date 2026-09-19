@@ -41,7 +41,7 @@ static void can_print_usage(void)
 	printf("  can search [--start <kbps>] [--end <kbps>] [--time <seconds>]\n");
 	printf("  can sniff --bitrate <kbps>\n");
 	printf("  can setbitrate <kbps>\n");
-	printf("  can send <id> [byte ...]\n");
+	printf("  can send [--ext] <id> [byte ...]\n");
 	printf("Bitrates: 10, 20, 50, 100, 125, 250, 500, 800, 1000 kbps\n");
 }
 
@@ -262,34 +262,42 @@ static int can_send(int argc, char **argv)
 		printf("Set a bitrate first with: can setbitrate <kbps>\n");
 		return 1;
 	}
-	if (argc < 3 || argc > 11) {
-		printf("Usage: can send <hex-id> [hex-byte ...]\n");
+
+	bool extended = false;
+	int id_index = 2;
+	if (argc >= 3 && strcmp(argv[2], "--ext") == 0) {
+		extended = true;
+		id_index = 3;
+	}
+	if (argc < id_index + 1 || argc > id_index + 8) {
+		printf("Usage: can send [--ext] <hex-id> [hex-byte ...]\n");
 		return 1;
 	}
 
 	uint32_t id;
-	if (!parse_hex_u32_arg(argv[2], TWAI_STD_ID_MASK, &id)) {
-		printf("Invalid standard CAN ID: %s\n", argv[2]);
+	uint32_t id_mask = extended ? TWAI_EXT_ID_MASK : TWAI_STD_ID_MASK;
+	if (!parse_hex_u32_arg(argv[id_index], id_mask, &id)) {
+		printf("Invalid %s CAN ID: %s\n", extended ? "extended" : "standard", argv[id_index]);
 		return 1;
 	}
 
 	uint8_t data[TWAI_FRAME_MAX_LEN];
-	uint8_t data_len = (uint8_t)(argc - 3);
+	uint8_t data_len = (uint8_t)(argc - id_index - 1);
 	for (uint8_t index = 0; index < data_len; ++index) {
 		uint32_t byte;
-		if (!parse_hex_u32_arg(argv[index + 3], UINT8_MAX, &byte)) {
-			printf("Invalid CAN data byte: %s\n", argv[index + 3]);
+		if (!parse_hex_u32_arg(argv[id_index + 1 + index], UINT8_MAX, &byte)) {
+			printf("Invalid CAN data byte: %s\n", argv[id_index + 1 + index]);
 			return 1;
 		}
 		data[index] = (uint8_t)byte;
 	}
 
-	esp_err_t error = can_transmitter_send(&can_transmitter, id, data, data_len);
+	esp_err_t error = can_transmitter_send(&can_transmitter, id, extended, data, data_len);
 	if (error != ESP_OK) {
 		printf("CAN transmit failed: %s\n", esp_err_to_name(error));
 		return 1;
 	}
-	printf("Sent STD %03" PRIX32 " [%u]", id, data_len);
+	printf(extended ? "Sent EXT %08" PRIX32 " [%u]" : "Sent STD %03" PRIX32 " [%u]", id, data_len);
 	for (uint8_t index = 0; index < data_len; ++index) {
 		printf(" %02X", data[index]);
 	}
@@ -327,7 +335,7 @@ void register_can_commands(void)
 	const esp_console_cmd_t can_cmd = {
 		.command = "can",
 		.help = "Search, sniff, configure, or transmit classic CAN frames",
-		.hint = "search [--start kbps] [--end kbps] [--time seconds] | sniff --bitrate kbps | setbitrate kbps | send hex-id [hex-byte ...]",
+		.hint = "search [--start kbps] [--end kbps] [--time seconds] | sniff --bitrate kbps | setbitrate kbps | send [--ext] hex-id [hex-byte ...]",
 		.func = &cmd_can,
 	};
 	ESP_ERROR_CHECK(esp_console_cmd_register(&can_cmd));

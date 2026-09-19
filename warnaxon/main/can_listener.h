@@ -38,5 +38,5 @@ esp_err_t can_listener_start(can_listener_t *listener, uint32_t bitrate_kbps, bo
 void can_listener_stop(can_listener_t *listener);
 esp_err_t can_transmitter_start(can_transmitter_t *transmitter, uint32_t bitrate_kbps);
 void can_transmitter_stop(can_transmitter_t *transmitter);
-esp_err_t can_transmitter_send(can_transmitter_t *transmitter, uint32_t id, const uint8_t *data, uint8_t data_len);
+esp_err_t can_transmitter_send(can_transmitter_t *transmitter, uint32_t id, bool extended, const uint8_t *data, uint8_t data_len);
 void can_print_frame(uint32_t bitrate_kbps, const can_rx_frame_t *frame, uint64_t *previous_timestamp);
